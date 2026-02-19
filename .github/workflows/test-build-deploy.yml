@@ -64,3 +64,15 @@ jobs:
           tags: ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+
+      - name: Trigger Render deployment
+        run: |
+          curl --request POST \
+            --url https://api.render.com/v1/services/srv-d6080214tr6s73aagl5g/deploys \
+            --header 'accept: application/json' \
+            --header 'content-type: application/json' \
+            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            --data '{
+              "clearCache": "do_not_clear",
+              "deployMode": "deploy_only"
+            }'
