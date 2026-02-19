@@ -65,6 +65,12 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
 
+  deploy-render:
+    name: Deploy to Render
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
       - name: Trigger Render deployment
         run: |
           curl --request POST \
@@ -73,6 +79,5 @@ jobs:
             --header 'content-type: application/json' \
             --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             --data '{
-              "clearCache": "do_not_clear",
               "deployMode": "deploy_only"
             }'
