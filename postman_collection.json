@@ -1,0 +1,519 @@
+{
+  "info": {
+    "_postman_id": "7cb8b4fe-fee6-44b5-bc10-64e48764a6e8",
+    "name": "tbz-booking-system-backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "1879796"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Discord API",
+      "item": [
+        {
+          "name": "GET /api/discord/user/info (auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/discord/user/info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "discord",
+                "user",
+                "info"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/discord/user/search?query=",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/discord/user/search?query=test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "discord",
+                "user",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "test"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/discord/oauth/callback?code=",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/discord/oauth/callback?code=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "discord",
+                "oauth",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Booking API (auth required)",
+      "item": [
+        {
+          "name": "GET /api/v1/bookings/ (List active)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v1/bookings/booking/:id (Get by ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/booking/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "booking",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v1/bookings/ (Create booking)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game\": \"Star Wars Shatterpoint\",\n  \"userId\": \"230697772918112256\",\n  \"username\": \"hanksha\",\n  \"points\": 8,\n  \"description\": \"test description\",\n  \"reminderEnabled\": false,\n  \"dateTime\": \"2026-01-01T12:00:00Z\",\n  \"players\": [\"hanksha\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v1/bookings/:id/accept (admin only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/:id/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                ":id",
+                "accept"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1292"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v1/bookings/:id/refuse (admin only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/:id/refuse?reason=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                ":id",
+                "refuse"
+              ],
+              "query": [
+                {
+                  "key": "reason",
+                  "value": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v1/bookings/:id/cancel",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v1/bookings/:id/modify",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"1289\",\n    \"game\": \"Star Wars Legion\",\n    \"userId\": \"230697772918112256\",\n    \"username\": \"hanksha\",\n    \"points\": 500,\n    \"description\": \"modified\",\n    \"status\": \"canceled\",\n    \"reminderEnabled\": false,\n    \"dateTime\": \"2026-08-02T13:30:45Z\",\n    \"players\": [\n        \"hanksha\",\n        \"Chris\"\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/:id/modify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                ":id",
+                "modify"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1289"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v1/bookings/stats/game",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/stats/game",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "stats",
+                "game"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v1/bookings/stats/game/period?startPeriod&endPeriod",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/stats/game/period?startPeriod=2026-01-01&endPeriod=2026-01-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "stats",
+                "game",
+                "period"
+              ],
+              "query": [
+                {
+                  "key": "startPeriod",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "endPeriod",
+                  "value": "2026-01-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v1/bookings/stats/day",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/stats/day",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "stats",
+                "day"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v1/bookings/:username (Get by username)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accesstoken",
+                "value": "{{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/:username",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                ":username"
+              ],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:9090"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    }
+  ]
+}
