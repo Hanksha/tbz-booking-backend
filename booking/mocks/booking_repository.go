@@ -6,15 +6,15 @@
 //      mockgen . BookingRepository
 //
 
-// Package booking_mocks is a generated GoMock package.
-package booking_mocks
+// Package mock_booking is a generated GoMock package.
+package mock_booking
 
 import (
 	context "context"
 	reflect "reflect"
 	time "time"
 
-	"github.com/hanksha/tbz-booking-system-backend/booking"
+	booking "github.com/hanksha/tbz-booking-system-backend/booking"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -54,7 +54,8 @@ func (m *MockBookingRepository) GetActiveBookings(ctx context.Context) ([]bookin
 // GetActiveBookings indicates an expected call of GetActiveBookings.
 func (mr *MockBookingRepositoryMockRecorder) GetActiveBookings(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveBookings", reflect.TypeOf((*MockBookingRepository)(nil).GetActiveBookings), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveBookings", reflect.TypeOf((*MockBookingRepository)(nil).GetActiveBookings),
+		ctx)
 }
 
 // GetBookingByID mocks base method.
@@ -145,6 +146,20 @@ func (m *MockBookingRepository) InsertBooking(ctx context.Context, arg1 booking.
 func (mr *MockBookingRepositoryMockRecorder) InsertBooking(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertBooking", reflect.TypeOf((*MockBookingRepository)(nil).InsertBooking), ctx, arg1)
+}
+
+// InsertManyBookings mocks base method.
+func (m *MockBookingRepository) InsertManyBookings(ctx context.Context, bookings []booking.Booking) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InsertManyBookings", ctx, bookings)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertManyBookings indicates an expected call of InsertManyBookings.
+func (mr *MockBookingRepositoryMockRecorder) InsertManyBookings(ctx, bookings any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertManyBookings", reflect.TypeOf((*MockBookingRepository)(nil).InsertManyBookings), ctx, bookings)
 }
 
 // SetBookingStatus mocks base method.

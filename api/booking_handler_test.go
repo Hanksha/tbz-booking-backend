@@ -237,6 +237,79 @@ func TestCreate(t *testing.T) {
 	})
 }
 
+func TestImport(t *testing.T) {
+	admin := discord.DiscordUser{ID: "1", Username: "admin", Admin: true}
+	nonAdmin := discord.DiscordUser{ID: "2", Username: "user", Admin: false}
+
+	t.Run("success", func(t *testing.T) {
+		router, ctrl, mockService := setupRouterWithUser(t, admin)
+		defer ctrl.Finish()
+
+		toImport := []bk.Booking{
+			{Game: "SW", Username: "john"},
+			{Game: "Other", Username: "jane"},
+		}
+		responseJson, _ := json.Marshal(gin.H{"message": "bookings imported"})
+		body, _ := json.Marshal(toImport)
+
+		mockService.EXPECT().ImportBookings(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/v1/bookings/import", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 201, w.Code)
+		assert.JSONEq(t, string(responseJson), w.Body.String())
+	})
+
+	t.Run("bad json", func(t *testing.T) {
+		router, ctrl, _ := setupRouterWithUser(t, admin)
+		defer ctrl.Finish()
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/v1/bookings/import", bytes.NewBufferString("["))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 400, w.Code)
+		assert.JSONEq(t, `{"error":"failed to parse JSON body"}`, w.Body.String())
+	})
+
+	t.Run("forbidden", func(t *testing.T) {
+		router, ctrl, _ := setupRouterWithUser(t, nonAdmin)
+		defer ctrl.Finish()
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/v1/bookings/import", bytes.NewBufferString("["))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 403, w.Code)
+		assert.JSONEq(t, `{"error":"not allowed"}`, w.Body.String())
+	})
+
+	t.Run("service error", func(t *testing.T) {
+		router, ctrl, mockService := setupRouterWithUser(t, admin)
+		defer ctrl.Finish()
+
+		toImport := []bk.Booking{
+			{Game: "SW", Username: "john"},
+			{Game: "Other", Username: "jane"},
+		}
+		body, _ := json.Marshal(toImport)
+		mockService.EXPECT().ImportBookings(gomock.Any(), gomock.Any()).Return(assert.AnError).Times(1)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/v1/bookings/import", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 400, w.Code)
+		assert.JSONEq(t, `{"error":"failed to import bookings"}`, w.Body.String())
+	})
+}
+
 func TestAccept(t *testing.T) {
 	admin := discord.DiscordUser{ID: "1", Username: "admin", Admin: true}
 	nonAdmin := discord.DiscordUser{ID: "2", Username: "user", Admin: false}

@@ -16,6 +16,7 @@ type BookingService interface {
 	FindBookingByID(ctx context.Context, id string) (bk.Booking, error)
 	FindBookingsPerUsername(ctx context.Context, username string) ([]bk.Booking, error)
 	CreateBooking(ctx context.Context, booking bk.Booking) (bk.Booking, error)
+	ImportBookings(ctx context.Context, bookings []bk.Booking) error
 	ModifyBooking(ctx context.Context, updated bk.Booking, user discord.DiscordUser) error
 	AcceptBooking(ctx context.Context, id string) error
 	RefuseBooking(ctx context.Context, id, reason string) error
@@ -38,6 +39,7 @@ func (h *BookingHandler) Register(rg *gin.RouterGroup) {
 	rg.GET("", h.ListActive)
 	rg.GET("/booking/:id", h.GetByID)
 	rg.POST("", h.Create)
+	rg.POST("/import", adminOnly, h.Import)
 	rg.PUT("/:id/accept", adminOnly, h.Accept)
 	rg.PUT("/:id/refuse", adminOnly, h.Refuse)
 	rg.PUT("/:id/cancel", h.Cancel)
@@ -119,6 +121,30 @@ func (h *BookingHandler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, inserted)
+}
+
+func (h *BookingHandler) Import(c *gin.Context) {
+	var bookings []bk.Booking
+
+	if err := c.BindJSON(&bookings); err != nil {
+		c.Error(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "failed to parse JSON body",
+		})
+		return
+	}
+
+	err := h.service.ImportBookings(c.Request.Context(), bookings)
+
+	if err != nil {
+		c.Error(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "failed to import bookings",
+		})
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "bookings imported"})
 }
 
 func (h *BookingHandler) Accept(c *gin.Context) {

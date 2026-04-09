@@ -165,6 +165,29 @@ func (r *Repository) InsertBooking(ctx context.Context, booking Booking) (Bookin
 	return booking, nil
 }
 
+func (r *Repository) InsertManyBookings(ctx context.Context, bookings []Booking) error {
+	rows := [][]interface{}{}
+
+	for _, booking := range bookings {
+		rows = append(rows, []interface{}{
+			booking.Game,
+			booking.UserID,
+			booking.Username,
+			int32(booking.Points),
+			booking.Description,
+			booking.Status,
+			booking.ReminderEnabled,
+			booking.DateTime,
+			booking.Players,
+		})
+	}
+
+	_, err := r.conn.CopyFrom(ctx, pgx.Identifier{`"game-table-booking".booking`},
+		[]string{"game", "userId", "username", "points", "description", "status", "reminderEnabled", "dateTime", "players"}, pgx.CopyFromRows(rows))
+
+	return fmt.Errorf("failed to insert many bookings: %w", err)
+}
+
 func (r *Repository) UpdateBooking(ctx context.Context, booking Booking) error {
 	sql := `
 			UPDATE "game-table-booking".booking

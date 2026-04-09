@@ -16,6 +16,7 @@ type BookingRepository interface {
 	GetBookingByID(ctx context.Context, id string) (Booking, error)
 	GetBookingsPerUsername(ctx context.Context, username string) ([]Booking, error)
 	InsertBooking(ctx context.Context, booking Booking) (Booking, error)
+	InsertManyBookings(ctx context.Context, bookings []Booking) error
 	UpdateBooking(ctx context.Context, booking Booking) error
 	SetBookingStatus(ctx context.Context, id string, status string) error
 	GetBookingCountPerGame(ctx context.Context) ([]GameBookingCount, error)
@@ -53,6 +54,12 @@ func (s *Service) CreateBooking(ctx context.Context, booking Booking) (Booking, 
 	}
 
 	return booking, err
+}
+
+func (s *Service) ImportBookings(ctx context.Context, bookings []Booking) error {
+	err := s.repo.InsertManyBookings(ctx, bookings)
+
+	return err
 }
 
 func (s *Service) ModifyBooking(ctx context.Context, updated Booking, user discord.DiscordUser) error {

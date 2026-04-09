@@ -217,6 +217,59 @@ func TestCreateBooking(t *testing.T) {
 	})
 }
 
+func TestInsertManyBookings(t *testing.T) {
+	dateTime := time.Now()
+
+	toInsert := []bk.Booking{
+		{
+			Game:            "test1",
+			UserID:          "user1ID",
+			Username:        "user1",
+			Points:          10,
+			Description:     "test description1",
+			ReminderEnabled: true,
+			DateTime:        dateTime,
+			Players:         []string{"user1", "player2"},
+		},
+		{
+			Game:            "test2",
+			UserID:          "user2ID",
+			Username:        "user2",
+			Points:          11,
+			Description:     "test description2",
+			ReminderEnabled: false,
+			DateTime:        dateTime,
+			Players:         []string{"user2", "player3"},
+		},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		ctrl, testDeps := newTestDeps(t)
+		defer ctrl.Finish()
+
+		testDeps.repo.EXPECT().InsertManyBookings(testDeps.ctx, toInsert).Return(nil).Times(1)
+		testDeps.client.EXPECT().SendMessage(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+		testDeps.client.EXPECT().SearchMembers(testDeps.ctx, gomock.Any(), gomock.Any()).Times(0)
+
+		err := testDeps.service.ImportBookings(testDeps.ctx, toInsert)
+
+		require.Nil(t, err)
+	})
+
+	t.Run("repo error", func(t *testing.T) {
+		ctrl, testDeps := newTestDeps(t)
+		defer ctrl.Finish()
+
+		testDeps.repo.EXPECT().InsertManyBookings(testDeps.ctx, toInsert).Return(errors.New("repo error")).Times(1)
+		testDeps.client.EXPECT().SendMessage(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+		testDeps.client.EXPECT().SearchMembers(testDeps.ctx, gomock.Any(), gomock.Any()).Times(0)
+
+		err := testDeps.service.ImportBookings(testDeps.ctx, toInsert)
+
+		require.Error(t, err)
+	})
+}
+
 func TestModifyBooking(t *testing.T) {
 	user := discord.DiscordUser{
 		ID:       "user1ID",
