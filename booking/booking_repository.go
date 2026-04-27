@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Repository struct{ conn *pgx.Conn }
+type Repository struct{ conn *pgxpool.Pool }
 
-func NewRepository(conn *pgx.Conn) *Repository {
+func NewRepository(conn *pgxpool.Pool) *Repository {
 	return &Repository{conn: conn}
 }
 

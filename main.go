@@ -14,7 +14,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 //go:embed database/setup.sql
@@ -31,14 +31,14 @@ func main() {
 
 	// postgres://postgres:password@localhost:5432/petprojects
 	logger.Info("connecting to PostgreSQL database")
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	conn, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 
 	if err != nil {
 		logger.Error("Unable to connect to database", "err", err)
 		os.Exit(1)
 	}
 
-	defer conn.Close(context.Background())
+	defer conn.Close()
 
 	_, err = conn.Exec(context.Background(), setupSQL)
 	if err != nil {
