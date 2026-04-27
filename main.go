@@ -12,6 +12,7 @@ import (
 	"github.com/hanksha/tbz-booking-system-backend/discord"
 	"github.com/joho/godotenv"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -59,6 +60,13 @@ func main() {
 	bookingService := bk.NewService(bookingRepo, discordClient, os.Getenv("DISCORD_CHANNEL_ID"))
 
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174", "https://tbz-booking-system-frontend.onrender.com"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "accesstoken"},
+		AllowCredentials: true,
+	}))
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
