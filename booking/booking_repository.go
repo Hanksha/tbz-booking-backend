@@ -22,7 +22,12 @@ func (r *Repository) GetActiveBookings(ctx context.Context) ([]Booking, error) {
             WHERE "dateTime" >= $1;
         `
 
-	rows, err := r.conn.Query(ctx, sql, time.Now())
+	paris, _ := time.LoadLocation("Europe/Paris")
+	nowParis := time.Now().In(paris)
+	cutoffParis := nowParis.Add(-3 * time.Hour)
+	nowAsUTC := time.Date(cutoffParis.Year(), cutoffParis.Month(), cutoffParis.Day(), cutoffParis.Hour(), cutoffParis.Minute(), cutoffParis.Second(), cutoffParis.Nanosecond(), time.UTC)
+
+	rows, err := r.conn.Query(ctx, sql, nowAsUTC)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch bookings: %w", err)
