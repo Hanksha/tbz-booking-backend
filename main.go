@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	_ "time/tzdata"
 
 	"github.com/hanksha/tbz-booking-system-backend/api"
 	bk "github.com/hanksha/tbz-booking-system-backend/booking"
