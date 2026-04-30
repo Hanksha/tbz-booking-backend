@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	"github.com/hanksha/tbz-booking-system-backend/discord"
+	discord "github.com/hanksha/tbz-booking-system-backend/discord"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -39,6 +39,21 @@ func NewMockDiscordClient(ctrl *gomock.Controller) *MockDiscordClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDiscordClient) EXPECT() *MockDiscordClientMockRecorder {
 	return m.recorder
+}
+
+// GetEvents mocks base method.
+func (m *MockDiscordClient) GetEvents(ctx context.Context) ([]discord.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEvents", ctx)
+	ret0, _ := ret[0].([]discord.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEvents indicates an expected call of GetEvents.
+func (mr *MockDiscordClientMockRecorder) GetEvents(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvents", reflect.TypeOf((*MockDiscordClient)(nil).GetEvents), ctx)
 }
 
 // GetGuildMember mocks base method.
