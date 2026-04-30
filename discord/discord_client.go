@@ -64,6 +64,15 @@ type User struct {
 	Username string `json:"username"`
 }
 
+type Event struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	StartTime   string `json:"scheduled_start_time"`
+	EndTime     string `json:"scheduled_end_time"`
+	Status      int    `json:"status"`
+}
+
 const baseURL = "https://discord.com/api/v10"
 
 type Client struct {
@@ -73,7 +82,8 @@ type Client struct {
 	redirectURI  string
 	serverID     string
 	client       *http.Client
-	cache        *cache.Cache
+	membersCache *cache.Cache
+	eventsCache  *cache.Cache
 }
 
 type DiscordClient interface {
@@ -81,6 +91,7 @@ type DiscordClient interface {
 	GetOAuth2Token(ctx context.Context, code string) (*OAuthToken, error)
 	GetGuildMember(ctx context.Context, accessToken string) (*Member, error)
 	SearchMembers(ctx context.Context, query string, limit int) ([]Member, error)
+	GetEvents(ctx context.Context) ([]Event, error)
 }
 
 func NewClient(token, clientID, clientSecret, redirectURI, serverID string) *Client {
@@ -94,7 +105,8 @@ func NewClient(token, clientID, clientSecret, redirectURI, serverID string) *Cli
 		clientSecret: clientSecret,
 		redirectURI:  redirectURI,
 		serverID:     serverID,
-		cache:        cache.New(1*time.Minute, 5*time.Minute),
+		membersCache: cache.New(1*time.Minute, 5*time.Minute),
+		eventsCache:  cache.New(1*time.Minute, 5*time.Minute),
 	}
 }
 
@@ -196,7 +208,7 @@ func (c *Client) GetOAuth2Token(ctx context.Context, code string) (*OAuthToken, 
 }
 
 func (c *Client) GetGuildMember(ctx context.Context, accessToken string) (*Member, error) {
-	cachedMember, found := c.cache.Get(accessToken)
+	cachedMember, found := c.membersCache.Get(accessToken)
 
 	if found {
 		return cachedMember.(*Member), nil
@@ -245,14 +257,14 @@ func (c *Client) GetGuildMember(ctx context.Context, accessToken string) (*Membe
 		return nil, fmt.Errorf("failed reading body: %w", err)
 	}
 
-	c.cache.Set(accessToken, &member, cache.DefaultExpiration)
+	c.membersCache.Set(accessToken, &member, cache.DefaultExpiration)
 
 	return &member, nil
 }
 
 func (c *Client) SearchMembers(ctx context.Context, query string, limit int) ([]Member, error) {
 	query = strings.TrimSpace(query)
-	cachedMembers, found := c.cache.Get(query)
+	cachedMembers, found := c.membersCache.Get(query)
 
 	if found {
 		return cachedMembers.([]Member), nil
@@ -305,9 +317,63 @@ func (c *Client) SearchMembers(ctx context.Context, query string, limit int) ([]
 		return nil, fmt.Errorf("failed reading body: %w", err)
 	}
 
-	c.cache.Set(query, members, cache.DefaultExpiration)
+	c.membersCache.Set(query, members, cache.DefaultExpiration)
 
 	return members, nil
+}
+
+func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
+	cachedEvents, found := c.membersCache.Get("events")
+
+	if found {
+		return cachedEvents.([]Event), nil
+	}
+
+	url, err := c.getURL("guilds", c.serverID, "scheduled-events")
+
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed create new request: %w", err)
+	}
+
+	c.setHeaders(req)
+
+	res, err := c.client.Do(req)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+
+	defer res.Body.Close()
+
+	bodyBytes, readErr := io.ReadAll(res.Body)
+
+	if res.StatusCode != http.StatusOK {
+		if readErr != nil {
+			return nil, fmt.Errorf("request failed with status %d; also failed reading body: %w", res.StatusCode, readErr)
+		}
+		return nil, fmt.Errorf("request failed with status '%v' and body:\n%v", res.StatusCode, string(bodyBytes))
+	}
+
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read body: %w", err)
+	}
+
+	var events = []Event{}
+	err = json.Unmarshal(bodyBytes, &events)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed reading body: %w", err)
+	}
+
+	c.membersCache.Set("events", events, cache.DefaultExpiration)
+
+	return events, nil
 }
 
 func (c *Client) setHeaders(req *http.Request) {

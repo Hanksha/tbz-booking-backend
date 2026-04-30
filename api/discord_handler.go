@@ -24,6 +24,7 @@ func (h *DiscordHandler) Register(rg *gin.RouterGroup) {
 	rg.GET("/user/info", DiscordAuth(h.client, h.adminRoleID), h.GetUserInfo)
 	rg.GET("/user/search", h.SearchUsers)
 	rg.GET("/oauth/callback", h.OAuthCallback)
+	rg.GET("/events", h.GetEvents)
 }
 
 func (h *DiscordHandler) GetUserInfo(c *gin.Context) {
@@ -69,4 +70,16 @@ func (h *DiscordHandler) OAuthCallback(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, token)
+}
+
+func (h *DiscordHandler) GetEvents(c *gin.Context) {
+	events, err := h.client.GetEvents(c.Request.Context())
+
+	if err != nil {
+		c.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get events"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, events)
 }
