@@ -92,6 +92,7 @@ type DiscordClient interface {
 	GetGuildMember(ctx context.Context, accessToken string) (*Member, error)
 	SearchMembers(ctx context.Context, query string, limit int) ([]Member, error)
 	GetEvents(ctx context.Context) ([]Event, error)
+	GetDMChannel(ctx context.Context, userID string) (string, error)
 }
 
 func NewClient(token, clientID, clientSecret, redirectURI, serverID string) *Client {
@@ -151,6 +152,59 @@ func (c *Client) SendMessage(ctx context.Context, channelID string, message Mess
 	}
 
 	return nil
+}
+
+func (c *Client) GetDMChannel(ctx context.Context, userID string) (string, error) {
+	if len(strings.TrimSpace(userID)) == 0 {
+		return "",errors.New("userID cannot be empty")
+	}
+	msgURL, err := c.getURL("users", "@me", "channels")
+
+	if err != nil {
+		return "", err
+	}
+
+	body, err := json.Marshal(map[string]string{
+		"recipient_id": userID,
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", msgURL, bytes.NewReader(body))
+
+	if err != nil {
+		return "", fmt.Errorf("failed create new request: %w", err)
+	}
+
+	c.setHeaders(req)
+
+	res, err := c.client.Do(req)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		bodyBytes, readErr := io.ReadAll(res.Body)
+		if readErr != nil {
+			return "", fmt.Errorf("request failed with status %d; also failed reading body: %w", res.StatusCode, readErr)
+		}
+		return "", fmt.Errorf("request failed with status '%v' and body:\n%v", res.StatusCode, string(bodyBytes))
+	}
+
+	var dmChannel struct {
+		ID string `json:"id"`
+	}
+	err = json.NewDecoder(res.Body).Decode(&dmChannel)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode response body: %w", err)
+	}
+
+	return dmChannel.ID, nil
 }
 
 func (c *Client) GetOAuth2Token(ctx context.Context, code string) (*OAuthToken, error) {

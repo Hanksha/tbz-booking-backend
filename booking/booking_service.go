@@ -171,6 +171,49 @@ func (s *Service) GetBookingCountPerWeekDay(ctx context.Context) ([]WeekDayBooki
 	return s.repo.GetBookingCountPerWeekDay(ctx)
 }
 
+func (s *Service) SendBookingReminders(ctx context.Context) error {
+	activeBookings, err := s.repo.GetActiveBookings(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to get active bookings: %w", err)
+	}
+
+	nowDate := time.Now()
+	for _, booking := range activeBookings {
+		if booking.ReminderEnabled && booking.DateTime.Day() == nowDate.Day() && booking.DateTime.Month() == nowDate.Month() && booking.DateTime.Year() == nowDate.Year() {
+			recipients := map[string]struct{}{}
+
+			if len(booking.UserID) != 0 {
+				recipients[booking.UserID] = struct{}{}
+			}
+
+			for _, player := range booking.Players {
+				if player == booking.Username {
+					continue
+				}
+
+				members, err := s.client.SearchMembers(ctx, player, 1)
+
+				if err == nil && len(members) != 0 && members[0].User.Username == player {
+					recipients[members[0].User.ID] = struct{}{}
+				}
+			}
+
+			for recipient := range recipients {
+				channelId, err := s.client.GetDMChannel(ctx, recipient)
+				if err != nil {
+					continue
+				}
+				err = s.client.SendMessage(ctx, channelId, discord.Message{
+					Content: fmt.Sprintf("Rappel pour la réservation de %s aujourd'hui at %s !", booking.Game, booking.DateTime.Format("15:04")),
+				})
+			}
+		}
+	}
+
+	return nil
+}
+
 func checkUserAllowed(booking Booking, user discord.DiscordUser) bool {
 	if booking.UserID != user.ID && !slices.Contains(booking.Players, user.Username) {
 		return false

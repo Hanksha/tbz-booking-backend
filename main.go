@@ -60,6 +60,17 @@ func main() {
 	bookingRepo := bk.NewRepository(conn)
 	bookingService := bk.NewService(bookingRepo, discordClient, os.Getenv("DISCORD_CHANNEL_ID"))
 
+	if os.Getenv("SEND_REMINDERS") == "true" {
+		err := bookingService.SendBookingReminders(context.Background())
+		if err != nil {
+			logger.Error("failed to send booking reminders", "err", err)
+			os.Exit(1)
+		} else {
+			logger.Info("sent booking reminders successfully")
+			os.Exit(0)
+		}
+	}
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{

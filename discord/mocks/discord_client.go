@@ -5,112 +5,126 @@
 //
 //      mockgen . DiscordClient
 //
-
 // Package discord_mocks is a generated GoMock package.
 package discord_mocks
 
 import (
-	context "context"
-	reflect "reflect"
+        context "context"
+        reflect "reflect"
 
-	discord "github.com/hanksha/tbz-booking-system-backend/discord"
-	gomock "go.uber.org/mock/gomock"
+        discord "github.com/hanksha/tbz-booking-system-backend/discord"
+        gomock "go.uber.org/mock/gomock"
 )
 
 // MockDiscordClient is a mock of DiscordClient interface.
 type MockDiscordClient struct {
-	ctrl     *gomock.Controller
-	recorder *MockDiscordClientMockRecorder
-	isgomock struct{}
+        ctrl     *gomock.Controller
+        recorder *MockDiscordClientMockRecorder
+        isgomock struct{}
 }
 
 // MockDiscordClientMockRecorder is the mock recorder for MockDiscordClient.
 type MockDiscordClientMockRecorder struct {
-	mock *MockDiscordClient
+        mock *MockDiscordClient
 }
 
 // NewMockDiscordClient creates a new mock instance.
 func NewMockDiscordClient(ctrl *gomock.Controller) *MockDiscordClient {
-	mock := &MockDiscordClient{ctrl: ctrl}
-	mock.recorder = &MockDiscordClientMockRecorder{mock}
-	return mock
+        mock := &MockDiscordClient{ctrl: ctrl}
+        mock.recorder = &MockDiscordClientMockRecorder{mock}
+        return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDiscordClient) EXPECT() *MockDiscordClientMockRecorder {
-	return m.recorder
+        return m.recorder
+}
+
+// GetDMChannel mocks base method.
+func (m *MockDiscordClient) GetDMChannel(ctx context.Context, userID string) (string, error) {
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetDMChannel", ctx, userID)
+        ret0, _ := ret[0].(string)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}
+
+// GetDMChannel indicates an expected call of GetDMChannel.
+func (mr *MockDiscordClientMockRecorder) GetDMChannel(ctx, userID any) *gomock.Call {
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDMChannel", reflect.TypeOf((*MockDiscordClient)(nil).GetDMChannel), ctx, userID)
 }
 
 // GetEvents mocks base method.
 func (m *MockDiscordClient) GetEvents(ctx context.Context) ([]discord.Event, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetEvents", ctx)
-	ret0, _ := ret[0].([]discord.Event)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetEvents", ctx)
+        ret0, _ := ret[0].([]discord.Event)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
 }
 
 // GetEvents indicates an expected call of GetEvents.
 func (mr *MockDiscordClientMockRecorder) GetEvents(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvents", reflect.TypeOf((*MockDiscordClient)(nil).GetEvents), ctx)
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvents", reflect.TypeOf((*MockDiscordClient)(nil).GetEvents), ctx)
 }
 
 // GetGuildMember mocks base method.
 func (m *MockDiscordClient) GetGuildMember(ctx context.Context, accessToken string) (*discord.Member, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGuildMember", ctx, accessToken)
-	ret0, _ := ret[0].(*discord.Member)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetGuildMember", ctx, accessToken)
+        ret0, _ := ret[0].(*discord.Member)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
 }
 
 // GetGuildMember indicates an expected call of GetGuildMember.
 func (mr *MockDiscordClientMockRecorder) GetGuildMember(ctx, accessToken any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGuildMember", reflect.TypeOf((*MockDiscordClient)(nil).GetGuildMember), ctx, accessToken)
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGuildMember", reflect.TypeOf((*MockDiscordClient)(nil).GetGuildMember), ctx, accessToken)
 }
 
 // GetOAuth2Token mocks base method.
 func (m *MockDiscordClient) GetOAuth2Token(ctx context.Context, code string) (*discord.OAuthToken, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOAuth2Token", ctx, code)
-	ret0, _ := ret[0].(*discord.OAuthToken)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetOAuth2Token", ctx, code)
+        ret0, _ := ret[0].(*discord.OAuthToken)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
 }
 
 // GetOAuth2Token indicates an expected call of GetOAuth2Token.
 func (mr *MockDiscordClientMockRecorder) GetOAuth2Token(ctx, code any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2Token", reflect.TypeOf((*MockDiscordClient)(nil).GetOAuth2Token), ctx, code)
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuth2Token", reflect.TypeOf((*MockDiscordClient)(nil).GetOAuth2Token), ctx, code)
 }
 
 // SearchMembers mocks base method.
 func (m *MockDiscordClient) SearchMembers(ctx context.Context, query string, limit int) ([]discord.Member, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchMembers", ctx, query, limit)
-	ret0, _ := ret[0].([]discord.Member)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SearchMembers", ctx, query, limit)
+        ret0, _ := ret[0].([]discord.Member)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
 }
 
 // SearchMembers indicates an expected call of SearchMembers.
 func (mr *MockDiscordClientMockRecorder) SearchMembers(ctx, query, limit any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchMembers", reflect.TypeOf((*MockDiscordClient)(nil).SearchMembers), ctx, query, limit)
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchMembers", reflect.TypeOf((*MockDiscordClient)(nil).SearchMembers), ctx, query, limit)
 }
 
 // SendMessage mocks base method.
 func (m *MockDiscordClient) SendMessage(ctx context.Context, channelID string, message discord.Message) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendMessage", ctx, channelID, message)
-	ret0, _ := ret[0].(error)
-	return ret0
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SendMessage", ctx, channelID, message)
+        ret0, _ := ret[0].(error)
+        return ret0
 }
 
 // SendMessage indicates an expected call of SendMessage.
 func (mr *MockDiscordClientMockRecorder) SendMessage(ctx, channelID, message any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockDiscordClient)(nil).SendMessage), ctx, channelID, message)
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockDiscordClient)(nil).SendMessage), ctx, channelID, message)
 }

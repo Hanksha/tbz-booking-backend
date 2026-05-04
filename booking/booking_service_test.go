@@ -835,3 +835,96 @@ func TestGetBookingCountPerGameInPeriod(t *testing.T) {
 		require.Equal(t, 0, len(got))
 	})
 }
+
+func TestSendBookingReminders(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		ctrl, testDeps := newTestDeps(t)
+		defer ctrl.Finish()
+
+		now := time.Now()
+		bookings := []bk.Booking{
+			{
+				ID:              "123",
+				Game:            "test1",
+				UserID:          "owner-id",
+				Username:        "user1",
+				ReminderEnabled: true,
+				DateTime:        now.Add(2 * time.Hour),
+				Players:         []string{"user1", "player2"},
+			},
+		}
+
+		member2 := discord.Member{
+			User: discord.User{
+				ID:       "player2-id",
+				Username: "player2",
+			},
+		}
+
+		testDeps.repo.EXPECT().GetActiveBookings(testDeps.ctx).Return(bookings, nil).Times(1)
+		testDeps.client.EXPECT().SearchMembers(testDeps.ctx, member2.User.Username, 1).Return([]discord.Member{member2}, nil).Times(1)
+		testDeps.client.EXPECT().GetDMChannel(testDeps.ctx, "owner-id").Return("dm-owner", nil).Times(1)
+		testDeps.client.EXPECT().GetDMChannel(testDeps.ctx, "player2-id").Return("dm-player2", nil).Times(1)
+		testDeps.client.EXPECT().SendMessage(testDeps.ctx, "dm-owner", discord.Message{
+			Content: "Rappel pour la réservation de test1 aujourd'hui at " + bookings[0].DateTime.Format("15:04") + " !",
+		}).Return(nil).Times(1)
+		testDeps.client.EXPECT().SendMessage(testDeps.ctx, "dm-player2", discord.Message{
+			Content: "Rappel pour la réservation de test1 aujourd'hui at " + bookings[0].DateTime.Format("15:04") + " !",
+		}).Return(nil).Times(1)
+
+		err := testDeps.service.SendBookingReminders(testDeps.ctx)
+
+		require.NoError(t, err)
+	})
+
+	t.Run("skip bookings without due reminders", func(t *testing.T) {
+		ctrl, testDeps := newTestDeps(t)
+		defer ctrl.Finish()
+
+		now := time.Now()
+		bookings := []bk.Booking{
+			{
+				ID:              "123",
+				Game:            "test1",
+				UserID:          "owner-id",
+				Username:        "user1",
+				ReminderEnabled: false,
+				DateTime:        now,
+				Players:         []string{"user1", "player2"},
+			},
+			{
+				ID:              "456",
+				Game:            "test2",
+				UserID:          "owner-id-2",
+				Username:        "user2",
+				ReminderEnabled: true,
+				DateTime:        now.Add(24 * time.Hour),
+				Players:         []string{"user2", "player3"},
+			},
+		}
+
+		testDeps.repo.EXPECT().GetActiveBookings(testDeps.ctx).Return(bookings, nil).Times(1)
+		testDeps.client.EXPECT().SearchMembers(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+		testDeps.client.EXPECT().GetDMChannel(gomock.Any(), gomock.Any()).Times(0)
+		testDeps.client.EXPECT().SendMessage(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		err := testDeps.service.SendBookingReminders(testDeps.ctx)
+
+		require.NoError(t, err)
+	})
+
+	t.Run("repo error", func(t *testing.T) {
+		ctrl, testDeps := newTestDeps(t)
+		defer ctrl.Finish()
+
+		testDeps.repo.EXPECT().GetActiveBookings(testDeps.ctx).Return(nil, errors.New("repo error")).Times(1)
+		testDeps.client.EXPECT().SearchMembers(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+		testDeps.client.EXPECT().GetDMChannel(gomock.Any(), gomock.Any()).Times(0)
+		testDeps.client.EXPECT().SendMessage(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		err := testDeps.service.SendBookingReminders(testDeps.ctx)
+
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to get active bookings")
+	})
+}
