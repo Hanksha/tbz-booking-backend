@@ -246,12 +246,6 @@ func (s *Service) sendNotification(ctx context.Context, booking Booking, options
 		userTag = fmt.Sprintf("<@%v>", booking.Username)
 	}
 
-	loc, err := time.LoadLocation("Europe/Paris")
-
-	if err != nil {
-		loc = time.Now().Location()
-	}
-
 	description := "Aucune"
 
 	if len(booking.Description) != 0 {
@@ -270,7 +264,7 @@ func (s *Service) sendNotification(ctx context.Context, booking Booking, options
 			},
 			{
 				Name:   "Date et Heure",
-				Value:  booking.DateTime.In(loc).Format(time.DateTime),
+				Value:  booking.DateTime.UTC().Format(time.DateTime),
 				Inline: true,
 			},
 			{
