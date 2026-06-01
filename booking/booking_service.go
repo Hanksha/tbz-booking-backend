@@ -50,7 +50,11 @@ func (s *Service) CreateBooking(ctx context.Context, booking Booking) (Booking, 
 	booking, err := s.repo.InsertBooking(ctx, booking)
 
 	if err == nil {
-		s.sendNotification(ctx, booking, NotificationOptions{message: "Nouvelle Réservation :calendar:"})
+		paris, _ := time.LoadLocation("Europe/Paris")
+		dt := booking.DateTime.In(paris)
+		bookingForNotif := booking
+		bookingForNotif.DateTime = time.Date(dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second(), dt.Nanosecond(), time.UTC)
+		s.sendNotification(ctx, bookingForNotif, NotificationOptions{message: "Nouvelle Réservation :calendar:"})
 	}
 
 	return booking, err
