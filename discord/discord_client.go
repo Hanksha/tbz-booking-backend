@@ -239,11 +239,11 @@ func (c *Client) GetOAuth2Token(ctx context.Context, code string) (*OAuthToken, 
 
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusTooManyRequests {
-		logRateLimitHeaders(res)
-	}
-
 	bodyBytes, readErr := io.ReadAll(res.Body)
+
+	if res.StatusCode == http.StatusTooManyRequests {
+		logRateLimitHeaders(res, bodyBytes)
+	}
 
 	if res.StatusCode != http.StatusOK {
 		if readErr != nil {
@@ -435,8 +435,10 @@ func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
 	return events, nil
 }
 
-// logRateLimitHeaders logs Discord's rate limit headers to identify global vs per-route/shared limits.
-func logRateLimitHeaders(res *http.Response) {
+// logRateLimitHeaders logs Discord's rate limit headers and body to identify global vs
+// per-route/shared limits. Empty X-RateLimit-* fields with only Retry-After set usually
+// indicate the 429 came from Cloudflare's edge (IP-level) rather than Discord's API itself.
+func logRateLimitHeaders(res *http.Response, body []byte) {
 	slog.Warn("discord rate limit hit",
 		"limit", res.Header.Get("X-RateLimit-Limit"),
 		"remaining", res.Header.Get("X-RateLimit-Remaining"),
@@ -446,6 +448,10 @@ func logRateLimitHeaders(res *http.Response) {
 		"global", res.Header.Get("X-RateLimit-Global"),
 		"scope", res.Header.Get("X-RateLimit-Scope"),
 		"retryAfter", res.Header.Get("Retry-After"),
+		"server", res.Header.Get("Server"),
+		"cfRay", res.Header.Get("Cf-Ray"),
+		"allHeaders", res.Header,
+		"body", string(body),
 	)
 }
 
