@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -156,7 +157,7 @@ func (c *Client) SendMessage(ctx context.Context, channelID string, message Mess
 
 func (c *Client) GetDMChannel(ctx context.Context, userID string) (string, error) {
 	if len(strings.TrimSpace(userID)) == 0 {
-		return "",errors.New("userID cannot be empty")
+		return "", errors.New("userID cannot be empty")
 	}
 	msgURL, err := c.getURL("users", "@me", "channels")
 
@@ -237,6 +238,10 @@ func (c *Client) GetOAuth2Token(ctx context.Context, code string) (*OAuthToken, 
 	}
 
 	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusTooManyRequests {
+		logRateLimitHeaders(res)
+	}
 
 	bodyBytes, readErr := io.ReadAll(res.Body)
 
@@ -428,6 +433,20 @@ func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
 	c.membersCache.Set("events", events, cache.DefaultExpiration)
 
 	return events, nil
+}
+
+// logRateLimitHeaders logs Discord's rate limit headers to identify global vs per-route/shared limits.
+func logRateLimitHeaders(res *http.Response) {
+	slog.Warn("discord rate limit hit",
+		"limit", res.Header.Get("X-RateLimit-Limit"),
+		"remaining", res.Header.Get("X-RateLimit-Remaining"),
+		"reset", res.Header.Get("X-RateLimit-Reset"),
+		"resetAfter", res.Header.Get("X-RateLimit-Reset-After"),
+		"bucket", res.Header.Get("X-RateLimit-Bucket"),
+		"global", res.Header.Get("X-RateLimit-Global"),
+		"scope", res.Header.Get("X-RateLimit-Scope"),
+		"retryAfter", res.Header.Get("Retry-After"),
+	)
 }
 
 func (c *Client) setHeaders(req *http.Request) {
