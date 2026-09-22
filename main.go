@@ -56,6 +56,7 @@ func main() {
 		os.Getenv("DISCORD_REDIRECT_URI"),
 		os.Getenv("DISCORD_SERVER_ID"),
 	)
+	discordClient.SetRateLimitStore(discord.NewPgRateLimitStore(conn))
 
 	bookingRepo := bk.NewRepository(conn)
 	bookingService := bk.NewService(bookingRepo, discordClient, os.Getenv("DISCORD_CHANNEL_ID"))

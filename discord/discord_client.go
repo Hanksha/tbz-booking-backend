@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -76,6 +78,10 @@ type Event struct {
 
 const baseURL = "https://discord.com/api/v10"
 
+// ErrRateLimited is returned (wrapped) when a request is refused or fails due to Discord/Cloudflare
+// rate limiting, so callers can distinguish it from other failures (e.g. invalid auth).
+var ErrRateLimited = errors.New("discord rate limited")
+
 type Client struct {
 	token        string
 	clientID     string
@@ -85,6 +91,12 @@ type Client struct {
 	client       *http.Client
 	membersCache *cache.Cache
 	eventsCache  *cache.Cache
+	// blockedUntil is a unix timestamp (seconds); requests are refused until this time to
+	// avoid extending a Discord/Cloudflare rate-limit block by retrying too soon.
+	blockedUntil atomic.Int64
+	// rateLimitStore optionally persists blockedUntil so it survives process restarts.
+	rateLimitStore RateLimitStore
+	loadStoreOnce  sync.Once
 }
 
 type DiscordClient interface {
@@ -112,7 +124,16 @@ func NewClient(token, clientID, clientSecret, redirectURI, serverID string) *Cli
 	}
 }
 
+// SetRateLimitStore wires a persistence layer for the rate-limit backoff window so it
+// survives process restarts. Must be called before the client is used.
+func (c *Client) SetRateLimitStore(store RateLimitStore) {
+	c.rateLimitStore = store
+}
+
 func (c *Client) SendMessage(ctx context.Context, channelID string, message Message) error {
+	if err := c.checkRateLimit(ctx); err != nil {
+		return err
+	}
 	if len(strings.TrimSpace(channelID)) == 0 {
 		return errors.New("channelID cannot be empty")
 	}
@@ -149,6 +170,9 @@ func (c *Client) SendMessage(ctx context.Context, channelID string, message Mess
 		if readErr != nil {
 			return fmt.Errorf("request failed with status %d; also failed reading body: %w", res.StatusCode, readErr)
 		}
+		if res.StatusCode == http.StatusTooManyRequests {
+			return c.handleTooManyRequests(ctx, res, bodyBytes)
+		}
 		return fmt.Errorf("request failed with status '%v' and body:\n%v", res.StatusCode, string(bodyBytes))
 	}
 
@@ -156,6 +180,9 @@ func (c *Client) SendMessage(ctx context.Context, channelID string, message Mess
 }
 
 func (c *Client) GetDMChannel(ctx context.Context, userID string) (string, error) {
+	if err := c.checkRateLimit(ctx); err != nil {
+		return "", err
+	}
 	if len(strings.TrimSpace(userID)) == 0 {
 		return "", errors.New("userID cannot be empty")
 	}
@@ -194,6 +221,9 @@ func (c *Client) GetDMChannel(ctx context.Context, userID string) (string, error
 		if readErr != nil {
 			return "", fmt.Errorf("request failed with status %d; also failed reading body: %w", res.StatusCode, readErr)
 		}
+		if res.StatusCode == http.StatusTooManyRequests {
+			return "", c.handleTooManyRequests(ctx, res, bodyBytes)
+		}
 		return "", fmt.Errorf("request failed with status '%v' and body:\n%v", res.StatusCode, string(bodyBytes))
 	}
 
@@ -209,6 +239,9 @@ func (c *Client) GetDMChannel(ctx context.Context, userID string) (string, error
 }
 
 func (c *Client) GetOAuth2Token(ctx context.Context, code string) (*OAuthToken, error) {
+	if err := c.checkRateLimit(ctx); err != nil {
+		return nil, err
+	}
 	tokenURL, err := c.getURL("oauth2", "token")
 
 	if err != nil {
@@ -242,7 +275,7 @@ func (c *Client) GetOAuth2Token(ctx context.Context, code string) (*OAuthToken, 
 	bodyBytes, readErr := io.ReadAll(res.Body)
 
 	if res.StatusCode == http.StatusTooManyRequests {
-		logRateLimitHeaders(res, bodyBytes)
+		return nil, c.handleTooManyRequests(ctx, res, bodyBytes)
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -273,6 +306,10 @@ func (c *Client) GetGuildMember(ctx context.Context, accessToken string) (*Membe
 		return cachedMember.(*Member), nil
 	}
 
+	if err := c.checkRateLimit(ctx); err != nil {
+		return nil, err
+	}
+
 	memberURL, err := c.getURL("users", "@me", "guilds", c.serverID, "member")
 
 	if err != nil {
@@ -297,6 +334,10 @@ func (c *Client) GetGuildMember(ctx context.Context, accessToken string) (*Membe
 	defer res.Body.Close()
 
 	bodyBytes, readErr := io.ReadAll(res.Body)
+
+	if res.StatusCode == http.StatusTooManyRequests {
+		return nil, c.handleTooManyRequests(ctx, res, bodyBytes)
+	}
 
 	if res.StatusCode != http.StatusOK {
 		if readErr != nil {
@@ -329,6 +370,10 @@ func (c *Client) SearchMembers(ctx context.Context, query string, limit int) ([]
 		return cachedMembers.([]Member), nil
 	}
 
+	if err := c.checkRateLimit(ctx); err != nil {
+		return nil, err
+	}
+
 	searchURL, err := c.getURL("guilds", c.serverID, "members", "search")
 
 	if err != nil {
@@ -357,6 +402,10 @@ func (c *Client) SearchMembers(ctx context.Context, query string, limit int) ([]
 	defer res.Body.Close()
 
 	bodyBytes, readErr := io.ReadAll(res.Body)
+
+	if res.StatusCode == http.StatusTooManyRequests {
+		return nil, c.handleTooManyRequests(ctx, res, bodyBytes)
+	}
 
 	if res.StatusCode != http.StatusOK {
 		if readErr != nil {
@@ -388,6 +437,10 @@ func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
 		return cachedEvents.([]Event), nil
 	}
 
+	if err := c.checkRateLimit(ctx); err != nil {
+		return nil, err
+	}
+
 	url, err := c.getURL("guilds", c.serverID, "scheduled-events")
 
 	if err != nil {
@@ -412,6 +465,10 @@ func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
 
 	bodyBytes, readErr := io.ReadAll(res.Body)
 
+	if res.StatusCode == http.StatusTooManyRequests {
+		return nil, c.handleTooManyRequests(ctx, res, bodyBytes)
+	}
+
 	if res.StatusCode != http.StatusOK {
 		if readErr != nil {
 			return nil, fmt.Errorf("request failed with status %d; also failed reading body: %w", res.StatusCode, readErr)
@@ -433,6 +490,71 @@ func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
 	c.membersCache.Set("events", events, cache.DefaultExpiration)
 
 	return events, nil
+}
+
+// checkRateLimit returns an error without making a request if a previous 429 response set a
+// backoff window that hasn't elapsed yet, to avoid extending the block by retrying too soon.
+// On first use it lazily loads any persisted deadline so the guard survives process restarts.
+func (c *Client) checkRateLimit(ctx context.Context) error {
+	if c.rateLimitStore != nil {
+		c.loadStoreOnce.Do(func() {
+			until, err := c.rateLimitStore.GetBlockedUntil(ctx)
+			if err != nil {
+				slog.Error("failed to load discord rate limit state", "err", err)
+				return
+			}
+			if !until.IsZero() {
+				c.blockedUntil.Store(until.Unix())
+			}
+		})
+	}
+
+	if until := time.Unix(c.blockedUntil.Load(), 0); time.Now().Before(until) {
+		return fmt.Errorf("%w: refusing request until %s", ErrRateLimited, until.Format(time.RFC3339))
+	}
+	return nil
+}
+
+// handleTooManyRequests records a backoff window from the response's retry-after info and logs
+// diagnostics, returning an error describing the block. The deadline is persisted via
+// rateLimitStore, if configured, so it survives process restarts.
+func (c *Client) handleTooManyRequests(ctx context.Context, res *http.Response, body []byte) error {
+	retryAfter := parseRetryAfter(res, body)
+	until := time.Now().Add(retryAfter)
+	c.blockedUntil.Store(until.Unix())
+	if c.rateLimitStore != nil {
+		if err := c.rateLimitStore.SetBlockedUntil(ctx, until); err != nil {
+			slog.Error("failed to persist discord rate limit state", "err", err)
+		}
+	}
+	logRateLimitHeaders(res, body)
+	return fmt.Errorf("%w: backing off until %s", ErrRateLimited, until.Format(time.RFC3339))
+}
+
+// parseRetryAfter extracts how long to wait from the Retry-After header (seconds or HTTP-date)
+// or, failing that, a "retry_after" field in the JSON body. Defaults to 60s if neither is present.
+func parseRetryAfter(res *http.Response, body []byte) time.Duration {
+	const defaultRetryAfter = 60 * time.Second
+
+	if h := res.Header.Get("Retry-After"); h != "" {
+		if secs, err := strconv.ParseFloat(h, 64); err == nil && secs > 0 {
+			return time.Duration(secs * float64(time.Second))
+		}
+		if t, err := time.Parse(http.TimeFormat, h); err == nil {
+			if d := time.Until(t); d > 0 {
+				return d
+			}
+		}
+	}
+
+	var payload struct {
+		RetryAfter float64 `json:"retry_after"`
+	}
+	if err := json.Unmarshal(body, &payload); err == nil && payload.RetryAfter > 0 {
+		return time.Duration(payload.RetryAfter * float64(time.Second))
+	}
+
+	return defaultRetryAfter
 }
 
 // logRateLimitHeaders logs Discord's rate limit headers and body to identify global vs

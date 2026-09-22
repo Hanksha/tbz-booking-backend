@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -46,6 +47,10 @@ func (h *DiscordHandler) SearchUsers(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
+		if errors.Is(err, discord.ErrRateLimited) {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "discord temporarily unavailable, please retry shortly"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search users"})
 		return
 	}
@@ -65,6 +70,10 @@ func (h *DiscordHandler) OAuthCallback(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
+		if errors.Is(err, discord.ErrRateLimited) {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "discord temporarily unavailable, please retry shortly"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get oauth2 token"})
 		return
 	}
@@ -77,6 +86,10 @@ func (h *DiscordHandler) GetEvents(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
+		if errors.Is(err, discord.ErrRateLimited) {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "discord temporarily unavailable, please retry shortly"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get events"})
 		return
 	}

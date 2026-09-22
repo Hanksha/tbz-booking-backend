@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"slices"
 
@@ -21,6 +22,11 @@ func DiscordAuth(discordClient discord.DiscordClient, adminRoleID string) gin.Ha
 		member, err := discordClient.GetGuildMember(c.Request.Context(), accessToken)
 
 		if err != nil {
+			if errors.Is(err, discord.ErrRateLimited) {
+				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "discord temporarily unavailable, please retry shortly"})
+				c.Abort()
+				return
+			}
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authentication"})
 			c.Abort()
 			return

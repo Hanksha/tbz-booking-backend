@@ -17,3 +17,13 @@ CREATE TABLE IF NOT EXISTS "game-table-booking".booking
     "dateTime" timestamp without time zone,
     players character varying[] COLLATE pg_catalog."default"
 );
+
+-- Table: game-table-booking.discord_rate_limit
+-- Single-row table persisting the Discord API backoff window across process restarts
+-- (e.g. Render free tier spinning the service down/up), since in-memory state doesn't survive that.
+
+CREATE TABLE IF NOT EXISTS "game-table-booking".discord_rate_limit
+(
+    id smallint PRIMARY KEY,
+    "blockedUntil" timestamp with time zone NOT NULL
+);
