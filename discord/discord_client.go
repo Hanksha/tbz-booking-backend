@@ -119,8 +119,8 @@ func NewClient(token, clientID, clientSecret, redirectURI, serverID string) *Cli
 		clientSecret: clientSecret,
 		redirectURI:  redirectURI,
 		serverID:     serverID,
-		membersCache: cache.New(1*time.Minute, 5*time.Minute),
-		eventsCache:  cache.New(1*time.Minute, 5*time.Minute),
+		membersCache: cache.New(10*time.Minute, 20*time.Minute),
+		eventsCache:  cache.New(10*time.Minute, 20*time.Minute),
 	}
 }
 
@@ -431,7 +431,7 @@ func (c *Client) SearchMembers(ctx context.Context, query string, limit int) ([]
 }
 
 func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
-	cachedEvents, found := c.membersCache.Get("events")
+	cachedEvents, found := c.eventsCache.Get("events")
 
 	if found {
 		return cachedEvents.([]Event), nil
@@ -487,7 +487,7 @@ func (c *Client) GetEvents(ctx context.Context) ([]Event, error) {
 		return nil, fmt.Errorf("failed reading body: %w", err)
 	}
 
-	c.membersCache.Set("events", events, cache.DefaultExpiration)
+	c.eventsCache.Set("events", events, cache.DefaultExpiration)
 
 	return events, nil
 }
