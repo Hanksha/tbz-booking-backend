@@ -1,0 +1,3 @@
+api.tableraze-montpellier-app.fr {
+	reverse_proxy backend:8080
+}
