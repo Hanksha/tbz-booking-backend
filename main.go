@@ -104,5 +104,9 @@ func main() {
 
 	bookingHandler.Register(bookingRouter)
 
-	r.Run(":9090")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9090"
+	}
+	r.Run(":" + port)
 }
